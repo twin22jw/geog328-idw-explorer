@@ -22,6 +22,9 @@
 <style>
     .range-note{font-size:12px;line-height:1.5;color:#415f56;background:#f0f5ee;border-left:3px solid #8aad98;padding:9px 11px;margin:10px 0 0}.method-details{margin-top:14px;border:1px solid #d5e5d7;background:#f5f8f3;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.5}.method-details summary{cursor:pointer;font-weight:800;color:#1b644d}.method-details p{margin:8px 0}.method-equation{background:#fff;border:1px solid #d9e5dd;border-radius:6px;padding:10px;font-family:"Cambria Math",Georgia,serif;font-size:15px;overflow-wrap:anywhere}.profile-legend{line-height:1.4}
   </style>
+<style>
+    .fit-tabs{display:flex;gap:7px;margin:9px 0 7px}.fit-tabs button{flex:1;border:1px solid #afc9bd;background:#fff;padding:9px 10px;border-radius:7px;color:#2b6254;font-size:12px;font-weight:800}.fit-tabs button[aria-selected="true"]{background:#dcefe5;border-color:#438c70;color:#164b3c}.fit-explanation{min-height:2.5em}.sample-panel{padding:17px;margin-top:15px}.sample-panel h3{font-size:16px;margin:0 0 4px}.sample-panel p{font-size:12px;line-height:1.5;color:var(--muted);margin:0 0 12px}.sample-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:7px}.sample-chip{display:flex;justify-content:space-between;gap:4px;background:#eef5ef;border:1px solid #d6e5da;border-radius:6px;padding:7px 9px;font-size:12px;font-variant-numeric:tabular-nums}.sample-chip strong{color:#246955}[hidden]{display:none!important}.bound-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:6px 0 7px}.bound-controls label{font-size:11px;font-weight:800;color:#3b6256}.bound-controls input{display:block;margin-top:5px;width:100%;border:1px solid #abc8b8;border-radius:6px;padding:8px;font-size:14px;color:var(--ink)}.range-status{font-size:11px;color:#386954;min-height:1.5em}.discussion.one-question .question-list{grid-template-columns:1fr}.discussion.one-question{width:100%}@media(max-width:900px){.sample-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}@media(max-width:540px){.sample-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  </style>
 </head>
 <body>
 <header class="top"><div class="top-inner"><div class="brand">GEOG 328 <span>/ SPATIAL INTERPOLATION</span></div><div class="top-right"><span class="top-note">SPLINE METHOD</span><a href="index.html">Explore IDW →</a></div></div></header>
@@ -30,37 +33,39 @@
   <div class="layout">
     <aside class="panel controls" aria-label="Transect settings"><div class="controls-inner"><h2>1D curve experiment</h2><p class="sub">Select one or more degrees. All curves use the same seven observations.</p>
       <div class="group"><div class="group-title">Polynomial degree</div><div class="degree-list"><label class="switchline" style="--degree-color:#94652e"><input id="degree1" type="checkbox" checked><span class="degree-dot"></span>1st · straight segments</label><label class="switchline" style="--degree-color:#a34e8b"><input id="degree2" type="checkbox"><span class="degree-dot"></span>2nd · quadratic</label><label class="switchline" style="--degree-color:#16836d"><input id="degree3" type="checkbox"><span class="degree-dot"></span>3rd · cubic</label></div><p class="hint">Turn on several curves to compare what happens between observations.</p></div>
+      <div class="group"><div class="group-title">Fit to observations</div><div class="fit-tabs" role="tablist" aria-label="Exact or smooth fit"><button id="fitExact" type="button" role="tab" aria-selected="true">Exact</button><button id="fitSmooth" type="button" role="tab" aria-selected="false">Smooth</button></div><p class="hint">Exact fits every point; smooth allows a small residual to reduce bending.</p></div>
       <div class="group"><strong>Try moving a point</strong><p class="hint">Drag any observation in the chart. Compare how the 1st-, 2nd-, and 3rd-degree curves respond around it and farther away.</p></div>
       <button class="reset" id="reset" type="button">Reset 1D experiment</button>
     </div></aside>
-    <div class="content"><section class="panel chart-panel"><div class="chart-top"><div><span class="stage-tag">1 · Along a transect</span><div class="chart-title">What does degree change?</div><div class="chart-caption">All selected curves pass through the same observations.</div></div><span class="badge" id="modeBadge">1st order</span></div><div class="chart-holder" id="chartHolder"><canvas id="chart" role="img" aria-label="Selected spline degrees along a transect"></canvas></div><div class="legend order-legend" id="orderLegend"></div><p class="chart-help">Drag an observation to change the data. Click between points to compare predictions at one x location.</p></section>
+    <div class="content"><section class="panel chart-panel"><div class="chart-top"><div><span class="stage-tag">1 · Along a transect</span><div class="chart-title">What does degree change?</div><div class="chart-caption fit-explanation" id="fitExplanation">Exact fit: each curve passes through every observation.</div></div><span class="badge" id="modeBadge">1st order</span></div><div class="chart-holder" id="chartHolder"><canvas id="chart" role="img" aria-label="Selected spline degrees along a transect"></canvas></div><div class="legend order-legend" id="orderLegend"></div><p class="chart-help">Drag an observation to change the data. Click between points to compare predictions at one x location.</p></section>
       <div class="readouts"><section class="panel readout"><div class="readout-label">Selected observation</div><div class="readout-value" id="selectedValue">—</div><small id="selectedCoord">—</small></section><section class="panel readout"><div class="readout-label">Prediction location</div><div class="readout-value" id="probeX">—</div><small>Click the graph to move it</small></section><section class="panel readout"><div class="readout-label" id="estimateLabel">Highlighted estimate</div><div class="readout-value" id="estimate">—</div><small id="residual">—</small></section></div>
       <div class="panel order-explainer"><strong>At the selected x:</strong> <span id="allDegreeEstimates">—</span><p>This is a separate 1D example of polynomial degree. The map below uses one fixed 2D thin-plate spline.</p></div>
     </div>
   </div>
+  <section class="panel discussion one-question"><h2>Group discussion · 1D curves</h2><p>Use the graph as evidence in your shared Google Doc.</p><ol class="question-list"><li><strong>Move an observation and compare fits</strong><span>Drag an observation to a new location or value. How do 1st-, 2nd-, and 3rd-degree curves respond near it and farther away? Switch between Exact and Smooth: what changes at the observations and between them?</span></li></ol></section>
   <section class="surface-section" aria-labelledby="surfaceTitle">
     <div class="surface-heading"><span class="stage-tag">2 · Across a plane</span><h2 id="surfaceTitle">Spline and IDW on the same observations</h2><p>The left map is one global, exact thin-plate spline. The right map is IDW. Drag A or B on either map to change the transect, then compare the two extracted profiles below.</p></div>
     <div class="surface-layout">
-      <aside class="panel surface-controls" aria-label="Map settings"><h3>Explore the maps</h3><p class="sub">Both methods use the same 12 sample values. Change IDW power to see how local influence changes.</p>
-        <div class="group"><div class="group-title"><label for="idwPower">IDW power α</label><output id="idwPowerVal">2</output></div><input class="range" id="idwPower" type="range" min="1" max="8" step="1" value="2"><div class="endpoints"><span>Broad influence</span><span>Strong local influence</span></div></div>
+      <aside class="panel surface-controls" aria-label="Map settings"><h3>Explore the maps</h3><p class="sub">Both methods use the same observations. Add samples to see how both surfaces respond.</p>
+        <div class="group"><div class="group-title"><label for="sampleCount">Number of observations</label><output id="sampleCountVal">12</output></div><input class="range" id="sampleCount" type="range" min="12" max="24" step="6" value="12"><div class="endpoints"><span>12</span><span>18</span><span>24</span></div><p class="hint">New samples fill gaps. Existing observations keep their locations and values.</p></div>
         <div class="group"><div class="group-title">Map display</div><label class="switchline"><input id="surfaceSamples" type="checkbox" checked> Show numbered samples</label><label class="switchline"><input id="surfaceContours" type="checkbox"> Show contours and relief</label></div>
-        <button class="reset" id="surfaceReset" type="button">Reset maps and transect</button><details class="method-details"><summary>How is the spline calculated?</summary><p>The map uses a global, exact thin-plate spline:</p><div class="method-equation">ẑ(x,y) = a₀ + a₁x + a₂y + Σᵢ cᵢ rᵢ² ln(rᵢ)</div><p>Here rᵢ = √((x − xᵢ)² + (y − yᵢ)²) is the distance to sample i. The coefficients are solved together from all 12 sample values so the surface passes through each observation. At rᵢ = 0, its kernel term is defined as 0.</p></details>
-        <div class="explore-prompt"><strong>Look for:</strong><ol><li>What happens around individual samples as α increases?</li><li>Where do the methods differ along A–B?</li><li>Does either profile go beyond the range of the 12 sample values?</li></ol></div>
+        <button class="reset" id="surfaceReset" type="button">Reset maps and transect</button><details class="method-details"><summary>How is the spline calculated?</summary><p>The map uses a global, exact thin-plate spline:</p><div class="method-equation">ẑ(x,y) = a₀ + a₁x + a₂y + Σᵢ cᵢ rᵢ² ln(rᵢ)</div><p>Here rᵢ = √((x − xᵢ)² + (y − yᵢ)²) is the distance to sample i. The coefficients are solved together from all <span id="formulaCount">12</span> active sample values so the surface passes through each observation. At rᵢ = 0, its kernel term is defined as 0.</p></details>
       </aside>
       <div class="surface-content">
-        <div class="panel"><div class="surface-map-grid"><div class="surface-card"><div class="surface-card-top"><div><h3>Thin-plate spline</h3><p>Global · exact · all 12 observations</p></div><span class="badge">Spline</span></div><div class="surface-canvas-wrap" id="leftSurfaceHolder"><canvas id="leftSurface" role="img" aria-label="Thin-plate spline map with A to B transect"></canvas></div><div class="surface-legend"><strong>0</strong><div class="surface-legend-bar"></div><strong>100</strong></div></div><div class="surface-card"><div class="surface-card-top"><div><h3>IDW</h3><p id="rightMapCaption">α = 2 · all observations</p></div><span class="badge">IDW</span></div><div class="surface-canvas-wrap" id="rightSurfaceHolder"><canvas id="rightSurface" role="img" aria-label="IDW map with A to B transect"></canvas></div><div class="surface-legend"><strong>0</strong><div class="surface-legend-bar"></div><strong>100</strong></div></div></div><div class="surface-notes">Drag A or B on either map. Click any map cell to inspect both interpolated values there. Click the A–B graph to inspect a location on the transect. Both maps use the same 0–100 color scale.</div></div>
-        <section class="panel profile-panel"><div class="profile-heading"><div><span class="stage-tag">3 · The same line on both maps</span><h3>Predictions along A–B</h3></div><span class="badge" id="profileBadge">12 sample values: 19–90</span></div><div class="profile-holder" id="profileHolder"><canvas id="profileChart" role="img" aria-label="Spline and IDW predictions extracted along the A to B map transect"></canvas></div><div class="profile-legend"><span><i class="profile-line spline-line"></i>Spline</span><span><i class="profile-line idw-line"></i>IDW</span><span><i class="profile-line bounds-line"></i>Minimum / maximum of all 12 sample values</span></div><p class="chart-help" id="profileHelp">Click the profile to read both interpolated values at a location on A–B. The curves come directly from the 2D maps.</p><p class="range-note">The dashed bounds are the minimum and maximum of <strong>all 12 input sample values</strong> (19 and 90). They stay the same wherever you draw A–B, even if it crosses no sample points.</p></section>
+        <div class="panel"><div class="surface-map-grid"><div class="surface-card"><div class="surface-card-top"><div><h3>Thin-plate spline</h3><p id="leftMapCaption">Global · exact · 12 observations</p></div><span class="badge">Spline</span></div><div class="surface-canvas-wrap" id="leftSurfaceHolder"><canvas id="leftSurface" role="img" aria-label="Thin-plate spline map with A to B transect"></canvas></div><div class="surface-legend"><strong>0</strong><div class="surface-legend-bar"></div><strong>100</strong></div></div><div class="surface-card"><div class="surface-card-top"><div><h3>IDW</h3><p id="rightMapCaption">α = 2 · 12 observations</p></div><span class="badge">IDW</span></div><div class="surface-canvas-wrap" id="rightSurfaceHolder"><canvas id="rightSurface" role="img" aria-label="IDW map with A to B transect"></canvas></div><div class="surface-legend"><strong>0</strong><div class="surface-legend-bar"></div><strong>100</strong></div></div></div><div class="surface-notes">Drag A or B on either map. Click any map cell to inspect both interpolated values there. Click the A–B graph to inspect a location on the transect. Both maps use the same 0–100 color scale.</div></div>
+        <section class="panel profile-panel"><div class="profile-heading"><div><span class="stage-tag">3 · A–B profile</span><h3>Predictions along A–B</h3></div><span class="badge" id="profileBadge">12 observations</span></div><p class="chart-help">Find the smallest and largest sample values above. Enter them below to draw your own reference lines.</p><div class="bound-controls"><label for="rangeMin">Sample minimum<input id="rangeMin" type="number" min="0" max="100" step="1" placeholder="Enter minimum"></label><label for="rangeMax">Sample maximum<input id="rangeMax" type="number" min="0" max="100" step="1" placeholder="Enter maximum"></label></div><div class="range-status" id="rangeStatus" role="status">Enter both values to add dashed reference lines.</div><div class="profile-holder" id="profileHolder"><canvas id="profileChart" role="img" aria-label="Spline and IDW predictions extracted along the A to B map transect"></canvas></div><div class="profile-legend"><span><i class="profile-line spline-line"></i>Spline</span><span><i class="profile-line idw-line"></i>IDW</span><span id="boundsLegend" hidden><i class="profile-line bounds-line"></i>Your entered minimum / maximum</span></div><p class="chart-help" id="profileHelp">Click the profile to read both interpolated values at a location on A–B. The curves come directly from the 2D maps.</p><p class="range-note">When entered, dashed lines show <strong>your values</strong>, not values observed along A–B. Use all active samples in the list below to find the actual minimum and maximum. The lines remain at your chosen values when A–B moves.</p></section>
         <div class="surface-readout"><div class="panel readout"><div class="readout-label" id="locationLabel">Location on A–B</div><div class="readout-value" id="surfaceCoord">—</div><small id="transectPosition">—</small></div><div class="panel readout"><div class="readout-label">Spline prediction</div><div class="readout-value" id="leftValue">—</div><small>Global thin-plate spline</small></div><div class="panel readout"><div class="readout-label">IDW prediction</div><div class="readout-value" id="rightValue">—</div><small id="rightValueNote">α = 2</small></div></div>
       </div>
     </div>
+    <section class="panel sample-panel"><h3>Observation values by sample ID</h3><p>Every numbered point on the maps appears here. Added values come from one fixed synthetic field built from the original observations, so both methods receive the same data.</p><div class="sample-grid" id="sampleValues"></div></section>
+    <section class="panel discussion one-question"><h2>Group discussion · spatial surfaces</h2><p>Compare the maps and A–B profile. Record your reasoning in your shared Google Doc.</p><ol class="question-list"><li><strong>Spline vs IDW</strong><span>Move A–B across different areas and increase the observation count. How do both surfaces and profiles change? Enter the minimum and maximum from the sample list. Does either method predict outside that range? Where does the spline rise or fall over a broader area than IDW, and why might the methods differ?</span></li></ol><p class="note">The top graph is an independent 1D B-spline example. The A–B graph comes directly from the two spatial models. All observations are fictional.</p></section>
   </section>
-  <section class="panel discussion"><h2>Group discussion questions</h2><p>Change one thing at a time. Use the curves, maps, cell predictions, and A–B profile as evidence in your shared Google Doc.</p><ol class="question-list"><li><strong>Move a 1D observation</strong><span>Drag one observation to a new location or value. How do the 1st-, 2nd-, and 3rd-degree curves change near that point and elsewhere? Why might their responses differ?</span></li><li><strong>Spline vs IDW</strong><span>Move A–B across the maps. Where does the spline rise or fall over a broader area than IDW? Compare both profiles with the 12-sample value bounds. Which method, if either, predicts outside them? What in the two methods might explain that?</span></li><li><strong>Explain the range</strong><span>Draw A–B so it crosses no sample points, then click map cells and the profile. Why are the dashed bounds still 19 and 90? How can the two methods give different values at the same location?</span></li></ol><p class="note">The top graph is an independent 1D B-spline example. The A–B graph below comes directly from the two spatial models. All observations are fictional.</p></section>
   <div class="footer">GEOG 328 · Spline Explorer &nbsp;·&nbsp; <a href="index.html">Explore the full IDW tool</a></div>
 </main>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const state = {n:7,spacing:'even',selected:3,drag:-1,probeX:.58,points:[],active:1};
+  const state = {n:7,spacing:'even',selected:3,drag:-1,probeX:.58,points:[],active:1,fitMode:'exact'};
   const values=[25,57,38,69,44,63,80,55,73];
   const colors={1:'#94652e',2:'#a34e8b',3:'#16836d',4:'#386ab2',5:'#d06b32'};
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -109,7 +114,7 @@
     const c=solve(m,rhs);if(!c)return ()=>NaN;
     return x=>{const u=clamp((x-x0)/span,0,1);return c.reduce((v,coef,j)=>v+coef*basis(j,p,u,k,n),0)};
   }
-  function lambda(){return 0}
+  function lambda(){return state.fitMode==='smooth'?.35:0}
   let queued=false;function render(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;draw()})}
   function draw(){
     const holder=$('chartHolder'),canvas=$('chart'),w=Math.max(320,holder.clientWidth),h=Math.max(260,holder.clientHeight),dpr=Math.min(devicePixelRatio||1,2);
@@ -138,7 +143,8 @@
     ctx.restore();
     pts.forEach((p,i)=>{ctx.beginPath();ctx.arc(X(p.x),Y(p.y),i===state.selected?8:6,0,Math.PI*2);ctx.fillStyle='#164450';ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle='#fff';ctx.stroke();if(i===state.selected){ctx.beginPath();ctx.arc(X(p.x),Y(p.y),12,0,Math.PI*2);ctx.strokeStyle='#27699b';ctx.lineWidth=1.5;ctx.stroke()}});
     const active=fits.get(state.active),selected=pts[state.selected],names={1:'1st',2:'2nd',3:'3rd',4:'4th',5:'5th'};
-    $('modeBadge').textContent=names[state.active]+' order · '+(lam?'approximate':'exact');
+    $('modeBadge').textContent=names[state.active]+' order · '+(lam?'smooth':'exact');
+    $('fitExplanation').textContent=lam?'Smooth fit: curves may miss observations to reduce bending.':'Exact fit: each curve passes through every observation.';
     $('selectedValue').textContent=selected.y.toFixed(1);$('selectedCoord').textContent='Point '+(state.selected+1)+' at x = '+selected.x.toFixed(2);
     $('probeX').textContent=state.probeX.toFixed(2);$('estimateLabel').textContent=names[state.active]+'-order estimate';$('estimate').textContent=active(state.probeX).toFixed(1);
     $('residual').textContent='At x = '+state.probeX.toFixed(2);
@@ -146,11 +152,12 @@
     $('orderLegend').innerHTML=ds.map(d=>'<span><i style="border-color:'+colors[d]+'"></i>'+names[d]+' order'+(d===state.active?' (highlighted)':'')+'</span>').join('');
   }
   for(let d=1;d<=3;d++)$('degree'+d).addEventListener('change',e=>{if(!degrees().length)e.target.checked=true;else if(e.target.checked)state.active=d;render()});
+  for(const mode of ['exact','smooth'])$('fit'+mode[0].toUpperCase()+mode.slice(1)).addEventListener('click',()=>{state.fitMode=mode;for(const option of ['exact','smooth'])$('fit'+option[0].toUpperCase()+option.slice(1)).setAttribute('aria-selected',String(option===mode));render()});
   function pointer(e){const r=$('chartHolder').getBoundingClientRect(),m={left:48,right:18,top:22,bottom:38},w=r.width-m.left-m.right,h=r.height-m.top-m.bottom;return{x:clamp((e.clientX-r.left-m.left)/w,0,1),y:clamp(105-(e.clientY-r.top-m.top)/h*110,0,100)}}
   const holder=$('chartHolder');holder.addEventListener('pointerdown',e=>{const p=pointer(e),pts=observed(),r=holder.getBoundingClientRect(),w=r.width-66,h=r.height-60;let chosen=-1,best=22;pts.forEach((item,i)=>{const d=Math.hypot((item.x-p.x)*w,(item.y-p.y)*h/110);if(d<best){best=d;chosen=i}});if(chosen>=0){state.selected=chosen;state.drag=chosen;holder.setPointerCapture(e.pointerId)}else state.probeX=p.x;render()});
   holder.addEventListener('pointermove',e=>{if(state.drag<0)return;const p=pointer(e),i=state.drag,lo=i===0?.04:state.points[i-1].x+.025,hi=i===state.n-1?.96:state.points[i+1].x-.025;state.points[i].x=clamp(p.x,lo,hi);state.points[i].y=clamp(p.y,2,98);render()});
   const stop=()=>{state.drag=-1};holder.addEventListener('pointerup',stop);holder.addEventListener('pointercancel',stop);
-  $('reset').addEventListener('click',()=>{for(let d=1;d<=3;d++)$('degree'+d).checked=d===1;state.selected=3;state.probeX=.58;state.active=1;makePoints()});
+  $('reset').addEventListener('click',()=>{for(let d=1;d<=3;d++)$('degree'+d).checked=d===1;state.selected=3;state.probeX=.58;state.active=1;state.fitMode='exact';$('fitExact').setAttribute('aria-selected','true');$('fitSmooth').setAttribute('aria-selected','false');makePoints()});
   window.addEventListener('resize',render);makePoints();
 })();
 </script>
@@ -158,9 +165,9 @@
 (() => {
   const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
   const base=[[.14,.22,22],[.29,.16,40],[.51,.15,65],[.78,.17,81],[.88,.38,72],[.65,.36,61],[.43,.31,47],[.17,.48,28],[.35,.58,34],[.59,.68,55],[.81,.77,90],[.25,.82,19]];
-  const points=base.map((p,i)=>({x:p[0],y:p[1],v:p[2],id:i+1}));
-  const minObs=Math.min(...points.map(p=>p.v)),maxObs=Math.max(...points.map(p=>p.v));
-  const state={power:2,samples:true,contours:false,a:{x:.04,y:.77},b:{x:.96,y:.21},t:.5,probeMode:'transect',cell:{col:30,row:30},drag:null};
+  const basePoints=base.map((p,i)=>({x:p[0],y:p[1],v:p[2],id:i+1}));
+  const extraLocations=[[.08,.09],[.39,.09],[.67,.08],[.94,.13],[.08,.34],[.56,.25],[.74,.51],[.96,.62],[.08,.69],[.45,.76],[.67,.90],[.96,.91]];
+  const state={power:2,count:12,samples:true,contours:false,a:{x:.04,y:.77},b:{x:.96,y:.21},t:.5,probeMode:'transect',cell:{col:30,row:30},drag:null};
   const stops=[[0,39,79,135],[.25,74,154,188],[.5,184,214,187],[.75,241,204,119],[1,198,76,55]];
   function color(v,shade=1){
     const t=clamp(v/100,0,1);
@@ -195,7 +202,13 @@
   function idw(samples,power){
     return (x,y)=>{let sum=0,total=0;for(const p of samples){const d=Math.hypot(x-p.x,y-p.y);if(d<1e-10)return p.v;const w=1/d**power;sum+=w;total+=w*p.v}return total/sum};
   }
-  const spline=thinPlate(points);
+  const initialSpline=thinPlate(basePoints),initialIdw=idw(basePoints,2);
+  const extras=extraLocations.map(([x,y],i)=>({x,y,v:Math.round(clamp((initialSpline(x,y)+initialIdw(x,y))/2,19,90)),id:i+13}));
+  const allPoints=basePoints.concat(extras);
+  const samples=()=>allPoints.slice(0,state.count);
+  const bounds=()=>{const values=samples().map(p=>p.v);return [Math.min(...values),Math.max(...values)]};
+  const enteredBounds=()=>{const a=$('rangeMin').value,b=$('rangeMax').value;if(a===''||b==='')return null;const lo=Number(a),hi=Number(b);return Number.isFinite(lo)&&Number.isFinite(hi)&&lo<hi?[lo,hi]:null};
+  let spline=thinPlate(samples());
   function position(t){return {x:state.a.x+(state.b.x-state.a.x)*t,y:state.a.y+(state.b.y-state.a.y)*t}}
   function probe(){return state.probeMode==='cell'?{x:(state.cell.col+.5)/62,y:(state.cell.row+.5)/62}:position(state.t)}
   function selectCell(p){state.cell={col:Math.floor(clamp(p.x,0,.999999)*62),row:Math.floor(clamp(p.y,0,.999999)*62)};state.probeMode='cell'}
@@ -228,7 +241,7 @@
       ctx.fillStyle=Number.isFinite(v)?color(v,shade):'#e8eee8';ctx.fillRect(x*cell,y*cell,Math.ceil(cell)+.4,Math.ceil(cell)+.4);
     }
     if(state.contours)contours(ctx,grid,n,size);
-    if(state.samples)for(const p of points){
+    if(state.samples)for(const p of samples()){
       const x=p.x*size,y=p.y*size;ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.fillStyle='#163845';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();
       ctx.fillStyle='#fff';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(p.id),x,y+.5);
     }
@@ -253,12 +266,12 @@
   function drawProfile(rows,fit){
     const holder=$('profileHolder'),canvas=$('profileChart'),w=Math.max(300,holder.clientWidth),h=Math.max(220,holder.clientHeight),ctx=canvasSetup(canvas,w,h);
     const m={left:48,right:18,top:17,bottom:34},pw=w-m.left-m.right,ph=h-m.top-m.bottom;
-    const min=Math.min(minObs,...rows.map(r=>r.s),...rows.map(r=>r.d)),max=Math.max(maxObs,...rows.map(r=>r.s),...rows.map(r=>r.d));
+    const entered=enteredBounds(),min=Math.min(0,...rows.map(r=>r.s),...rows.map(r=>r.d),...(entered||[])),max=Math.max(100,...rows.map(r=>r.s),...rows.map(r=>r.d),...(entered||[]));
     const lo=Math.floor((min-5)/10)*10,hi=Math.ceil((max+5)/10)*10,X=t=>m.left+t*pw,Y=v=>m.top+(hi-v)/(hi-lo)*ph;
-    ctx.fillStyle='#fbfcf8';ctx.fillRect(0,0,w,h);ctx.fillStyle='#f0f4f0';ctx.fillRect(m.left,Y(maxObs),pw,Y(minObs)-Y(maxObs));
+    ctx.fillStyle='#fbfcf8';ctx.fillRect(0,0,w,h);if(entered){ctx.fillStyle='#f0f4f0';ctx.fillRect(m.left,Y(entered[1]),pw,Y(entered[0])-Y(entered[1]))}
     ctx.strokeStyle='#d7e4dc';ctx.lineWidth=1;ctx.font='11px system-ui';ctx.textAlign='right';ctx.fillStyle='#647c74';
     for(let v=Math.ceil(lo/20)*20;v<=hi;v+=20){ctx.beginPath();ctx.moveTo(m.left,Y(v));ctx.lineTo(w-m.right,Y(v));ctx.stroke();ctx.fillText(String(v),m.left-8,Y(v)+4)}
-    ctx.strokeStyle='#758b83';ctx.setLineDash([5,4]);for(const v of [minObs,maxObs]){ctx.beginPath();ctx.moveTo(m.left,Y(v));ctx.lineTo(w-m.right,Y(v));ctx.stroke()}ctx.setLineDash([]);
+    if(entered){ctx.strokeStyle='#758b83';ctx.setLineDash([5,4]);for(const v of entered){ctx.beginPath();ctx.moveTo(m.left,Y(v));ctx.lineTo(w-m.right,Y(v));ctx.stroke()}ctx.setLineDash([])}
     function trace(key,color){ctx.strokeStyle=color;ctx.lineWidth=3;ctx.beginPath();rows.forEach((r,i)=>i?ctx.lineTo(X(r.t),Y(r[key])):ctx.moveTo(X(r.t),Y(r[key])));ctx.stroke()}
     trace('s','#ba4c31');trace('d','#245e9e');
     if(state.probeMode==='transect'){
@@ -274,10 +287,15 @@
   }
   let queued=false;function render(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;draw()})}
   function draw(){
-    const fit=idw(points,state.power),rows=profile(fit),q=probe();
+    const fit=idw(samples(),2),rows=profile(fit),q=probe(),[minObs,maxObs]=bounds();
     drawMap($('leftSurface'),spline);drawMap($('rightSurface'),fit);drawProfile(rows,fit);
-    $('idwPowerVal').textContent=String(state.power);$('rightMapCaption').textContent='α = '+state.power+' · all observations';$('rightValueNote').textContent='α = '+state.power;
-    $('profileBadge').textContent='12 sample values: '+minObs+'–'+maxObs;
+    $('rightMapCaption').textContent='α = 2 · '+state.count+' observations';$('rightValueNote').textContent='α = 2';
+    $('leftMapCaption').textContent='Global · exact · '+state.count+' observations';
+    $('profileBadge').textContent=state.count+' observations';
+    $('sampleCountVal').textContent=String(state.count);
+    $('sampleValues').innerHTML=samples().map(p=>'<div class="sample-chip"><strong>#'+String(p.id).padStart(2,'0')+'</strong><span>'+p.v+'</span></div>').join('');
+    $('formulaCount').textContent=String(state.count);
+    const entered=enteredBounds();$('boundsLegend').hidden=!entered;$('rangeStatus').textContent=entered?'Your reference lines: '+entered[0]+' and '+entered[1]:$('rangeMin').value!==''&&$('rangeMax').value!==''?'Enter a minimum smaller than the maximum.':'Enter both values to add dashed reference lines.';
     $('surfaceCoord').textContent=q.x.toFixed(2)+', '+q.y.toFixed(2);
     $('locationLabel').textContent=state.probeMode==='cell'?'Selected map cell':'Location on A–B';
     $('transectPosition').textContent=state.probeMode==='cell'?'Column '+(state.cell.col+1)+', row '+(state.cell.row+1):Math.round(state.t*100)+'% of the way from A to B';
@@ -296,9 +314,10 @@
   $('profileHolder').addEventListener('pointerdown',e=>{state.t=profileT(e);state.probeMode='transect';$('profileHolder').setPointerCapture(e.pointerId);state.drag='profile';render()});
   $('profileHolder').addEventListener('pointermove',e=>{if(state.drag==='profile'){state.t=profileT(e);state.probeMode='transect';render()}});
   $('profileHolder').addEventListener('pointerup',()=>{state.drag=null});$('profileHolder').addEventListener('pointercancel',()=>{state.drag=null});
-  $('idwPower').addEventListener('input',()=>{state.power=+$('idwPower').value;render()});
+  $('sampleCount').addEventListener('input',()=>{state.count=+$('sampleCount').value;spline=thinPlate(samples());render()});
+  for(const id of ['rangeMin','rangeMax'])$(id).addEventListener('input',render);
   for(const id of ['surfaceSamples','surfaceContours'])$(id).addEventListener('input',()=>{state.samples=$('surfaceSamples').checked;state.contours=$('surfaceContours').checked;render()});
-  $('surfaceReset').addEventListener('click',()=>{state.power=2;state.samples=true;state.contours=false;state.a={x:.04,y:.77};state.b={x:.96,y:.21};state.t=.5;state.probeMode='transect';state.cell={col:30,row:30};$('idwPower').value='2';$('surfaceSamples').checked=true;$('surfaceContours').checked=false;render()});
+  $('surfaceReset').addEventListener('click',()=>{state.count=12;spline=thinPlate(samples());state.samples=true;state.contours=false;state.a={x:.04,y:.77};state.b={x:.96,y:.21};state.t=.5;state.probeMode='transect';state.cell={col:30,row:30};$('sampleCount').value='12';$('rangeMin').value='';$('rangeMax').value='';$('surfaceSamples').checked=true;$('surfaceContours').checked=false;render()});
   window.addEventListener('resize',render);render();
 })();
 </script>
