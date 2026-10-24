@@ -26,7 +26,7 @@
       <div class="group"><div class="group-title"><label for="sampleCount">Number of observations</label><output id="sampleCountVal">7 points</output></div><input class="range" id="sampleCount" type="range" min="5" max="9" step="1" value="7"><p class="hint">More points create more short spline segments.</p></div>
       <div class="group"><div class="group-title"><label for="spacing">Sample spacing</label></div><select class="select" id="spacing"><option value="even">Evenly spaced</option><option value="cluster">Clustered</option></select><p class="hint">Move individual observations by dragging them on the graph.</p></div>
       <div class="group"><div class="group-title"><label for="smooth">Smoothing strength</label><output id="smoothVal">Exact · λ = 0</output></div><input class="range" id="smooth" type="range" min="0" max="100" step="1" value="0"><div class="endpoints"><span>Exact: through every point</span><span>Approximate: smoother</span></div><p class="hint">Smoothing allows the curve to miss observations slightly when measurements may contain noise.</p></div>
-      <div class="group"><div class="group-title">Spline degree · show curves</div><div class="degree-list"><label class="switchline" id="degreeLabel1" style="--degree-color:#94652e"><input id="degree1" type="checkbox"> <span class="degree-dot"></span> 1st · linear</label><label class="switchline" id="degreeLabel2" style="--degree-color:#a34e8b"><input id="degree2" type="checkbox"> <span class="degree-dot"></span> 2nd · quadratic</label><label class="switchline" id="degreeLabel3" style="--degree-color:#16836d"><input id="degree3" type="checkbox" checked> <span class="degree-dot"></span> 3rd · cubic</label><label class="switchline" id="degreeLabel4" style="--degree-color:#386ab2"><input id="degree4" type="checkbox"> <span class="degree-dot"></span> 4th · quartic</label><label class="switchline" id="degreeLabel5" style="--degree-color:#d06b32"><input id="degree5" type="checkbox"> <span class="degree-dot"></span> 5th · quintic</label></div><p class="hint">Choose several curves to compare. The last selected curve is highlighted. Degree 5 needs at least 6 observations.</p></div><div class="group"><label class="switchline"><input id="outlier" type="checkbox"> Add a high outlier</label><p class="hint">Move an unusual value to see how each degree responds.</p></div>
+      <div class="group"><div class="group-title">Spline degree · show curves</div><div class="degree-list"><label class="switchline" id="degreeLabel1" style="--degree-color:#94652e"><input id="degree1" type="checkbox" checked> <span class="degree-dot"></span> 1st · linear</label><label class="switchline" id="degreeLabel2" style="--degree-color:#a34e8b"><input id="degree2" type="checkbox"> <span class="degree-dot"></span> 2nd · quadratic</label><label class="switchline" id="degreeLabel3" style="--degree-color:#16836d"><input id="degree3" type="checkbox"> <span class="degree-dot"></span> 3rd · cubic</label><label class="switchline" id="degreeLabel4" style="--degree-color:#386ab2"><input id="degree4" type="checkbox"> <span class="degree-dot"></span> 4th · quartic</label><label class="switchline" id="degreeLabel5" style="--degree-color:#d06b32"><input id="degree5" type="checkbox"> <span class="degree-dot"></span> 5th · quintic</label></div><p class="hint">Choose several curves to compare. The last selected curve is highlighted. Degree 5 needs at least 6 observations.</p></div><div class="group"><label class="switchline"><input id="outlier" type="checkbox"> Add a high outlier</label><p class="hint">The middle observation jumps 55 units; the dashed red line shows its change.</p></div>
       <button class="reset" id="reset" type="button">Reset defaults</button>
     </div></aside>
     <div class="content">
@@ -42,7 +42,7 @@
          <div class="group"><div class="group-title"><label for="surfaceReach">Global or local</label></div><select class="select" id="surfaceReach"><option value="global">Global · all samples</option><option value="local">Local · nearest k samples</option></select><div class="surface-control-extra" id="surfaceKBox"><div class="group-title" style="margin-top:11px"><label for="surfaceK">Nearest k</label><output id="surfaceKVal">6</output></div><input class="range" id="surfaceK" type="range" min="5" max="12" step="1" value="6"></div><p class="hint">Global uses one surface. Local refits the surface near each prediction point.</p></div>
          <div class="group"><div class="group-title"><label for="surfaceSmooth">Exact or approximate</label><output id="surfaceSmoothVal">Exact · λ = 0</output></div><input class="range" id="surfaceSmooth" type="range" min="0" max="100" step="1" value="0"><div class="endpoints"><span>Through observations</span><span>Smoother fit</span></div><p class="hint">Regularization allows small misses at observed locations.</p></div>
 
-         <div class="group"><div class="group-title">Map display</div><label class="switchline"><input id="surfaceSamples" type="checkbox" checked> Show numbered samples</label><label class="switchline"><input id="surfaceContours" type="checkbox" checked> Show contours and relief</label></div>
+         <div class="group"><div class="group-title">Map display</div><label class="switchline"><input id="surfaceSamples" type="checkbox" checked> Show numbered samples</label><label class="switchline"><input id="surfaceContours" type="checkbox"> Show contours and relief</label></div>
        </div><button class="reset" id="surfaceReset" type="button">Reset surface settings</button></aside>
         <div class="surface-content"><div class="panel"><div class="surface-tabs" role="tablist" aria-label="Surface comparison"><button id="splineTab" type="button" role="tab" aria-selected="true" aria-controls="surfacePanel">Explore spline surface</button><button id="idwTab" type="button" role="tab" aria-selected="false" aria-controls="surfacePanel">Compare spline with IDW</button></div><div id="surfacePanel" role="tabpanel" aria-labelledby="splineTab"><div class="surface-map-grid"><div class="surface-card"><div class="surface-card-top"><div><h3>Experiment spline</h3><p id="leftMapCaption">2nd order · global · exact</p></div><span class="badge" id="leftMapBadge">Spline</span></div><div class="surface-canvas-wrap" id="leftSurfaceHolder"><canvas id="leftSurface" role="img" aria-label="Experiment spatial spline surface"></canvas></div><div class="surface-legend"><strong>0</strong><div class="surface-legend-bar"></div><strong>100</strong></div></div><div class="surface-card"><div class="surface-card-top"><div><h3 id="rightMapTitle">Reference spline</h3><p id="rightMapCaption">2nd order · global · exact</p></div><span class="badge" id="rightMapBadge">Reference</span></div><div class="surface-canvas-wrap" id="rightSurfaceHolder"><canvas id="rightSurface" role="img" aria-label="Reference spatial interpolation surface"></canvas></div><div class="surface-legend"><strong>0</strong><div class="surface-legend-bar"></div><strong>100</strong></div></div></div><div class="surface-notes"><span class="surface-swatch"></span> Numbers identify observations. Click either map to move the prediction point on both maps. <strong>Both maps share one 0–100 color scale.</strong> Colors are clipped at the ends, while the numeric estimates show any overshoot.</div></div><div class="surface-readout"><div class="panel readout"><div class="readout-label">Prediction location</div><div class="readout-value" id="surfaceCoord">—</div><small>Click either map to move it</small></div><div class="panel readout"><div class="readout-label">Experiment spline</div><div class="readout-value" id="leftValue">—</div><small id="leftValueNote">2nd order · global · exact</small></div><div class="panel readout"><div class="readout-label" id="rightValueLabel">Reference spline</div><div class="readout-value" id="rightValue">—</div><small id="rightValueNote">2nd order · global · exact</small></div></div><div class="panel surface-callout" id="surfaceExplanation"><strong>Order 2:</strong> A thin-plate radial spline uses all observations and passes through each one.</div></div>
      </div>
@@ -54,7 +54,7 @@
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const state = {n:7,spacing:'even',smooth:0,outlier:false,selected:3,drag:-1,probeX:.58,points:[],active:3};
+  const state = {n:7,spacing:'even',smooth:0,outlier:false,selected:3,drag:-1,probeX:.58,points:[],active:1};
   const values=[25,57,38,69,44,63,80,55,73];
   const colors={1:'#94652e',2:'#a34e8b',3:'#16836d',4:'#386ab2',5:'#d06b32'};
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -76,7 +76,7 @@
     state.points=xs.map((x,i)=>({x,y:values[Math.round(i*(values.length-1)/(n-1))]}));
     state.selected=Math.min(state.selected,n-1);render();
   }
-  function observed(){return state.points.map((p,i)=>({x:p.x,y:state.outlier&&i===Math.floor(state.n/2)?Math.min(98,p.y+45):p.y}))}
+  function observed(){return state.points.map((p,i)=>({x:p.x,y:state.outlier&&i===Math.floor(state.n/2)?Math.min(100,p.y+55):p.y}))}
   function degrees(){return [1,2,3,4,5].filter(d=>$( 'degree'+d ).checked)}
   function knots(us,p){
     const n=us.length,k=Array(p+1).fill(0);
@@ -130,11 +130,18 @@
       const py=fn(state.probeX);ctx.beginPath();ctx.arc(X(state.probeX),Y(py),d===state.active?5.5:4,0,Math.PI*2);ctx.fillStyle=colors[d];ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
     }
     ctx.restore();
+    if(state.outlier){
+      const i=Math.floor(state.n/2),p=pts[i],original=state.points[i];
+      ctx.strokeStyle='#c74f39';ctx.lineWidth=2;ctx.setLineDash([4,3]);
+      ctx.beginPath();ctx.moveTo(X(p.x),Y(original.y));ctx.lineTo(X(p.x),Y(p.y));ctx.stroke();ctx.setLineDash([]);
+      ctx.beginPath();ctx.arc(X(p.x),Y(original.y),5,0,Math.PI*2);ctx.strokeStyle='#c74f39';ctx.lineWidth=1.5;ctx.stroke();
+      ctx.fillStyle='#b43f2d';ctx.textAlign='center';ctx.font='bold 11px system-ui';ctx.fillText('OUTLIER',X(p.x),Math.max(17,Y(p.y)-12));
+    }
     pts.forEach((p,i)=>{ctx.beginPath();ctx.arc(X(p.x),Y(p.y),i===state.selected?8:6,0,Math.PI*2);ctx.fillStyle=state.outlier&&i===Math.floor(state.n/2)?'#c74f39':'#164450';ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle='#fff';ctx.stroke();if(i===state.selected){ctx.beginPath();ctx.arc(X(p.x),Y(p.y),12,0,Math.PI*2);ctx.strokeStyle='#27699b';ctx.lineWidth=1.5;ctx.stroke()}});
     const active=fits.get(state.active),selected=pts[state.selected],names={1:'1st',2:'2nd',3:'3rd',4:'4th',5:'5th'};
     $('modeBadge').textContent=names[state.active]+' order · '+(lam?'approximate':'exact');
     $('smoothVal').textContent=lam===0?'Exact · λ = 0':'Approximate · λ = '+lam.toFixed(3);
-    $('selectedValue').textContent=selected.y.toFixed(1);$('selectedCoord').textContent='Point '+(state.selected+1)+' at x = '+selected.x.toFixed(2);
+    $('selectedValue').textContent=selected.y.toFixed(1);$('selectedCoord').textContent='Point '+(state.selected+1)+' at x = '+selected.x.toFixed(2)+(state.outlier&&state.selected===Math.floor(state.n/2)?' · high outlier':'');
     $('probeX').textContent=state.probeX.toFixed(2);$('estimateLabel').textContent=names[state.active]+'-order estimate';$('estimate').textContent=active(state.probeX).toFixed(1);
     $('residual').textContent='At x = '+state.probeX.toFixed(2);
     $('maxMiss').textContent=Math.max(...pts.map(p=>Math.abs(active(p.x)-p.y))).toFixed(2);
@@ -142,15 +149,15 @@
     $('orderLegend').innerHTML=ds.map(d=>'<span><i style="background:'+colors[d]+'"></i>'+names[d]+' order'+(d===state.active?' (highlighted)':'')+'</span>').join('');
   }
   function readControls(){state.smooth=+$('smooth').value;state.outlier=$('outlier').checked;render()}
-  $('sampleCount').addEventListener('input',()=>{state.n=+$('sampleCount').value;$('sampleCountVal').textContent=state.n+' points';if(state.n<6){$('degree5').checked=false;$('degree5').disabled=true}else $('degree5').disabled=false;if(!degrees().length)$('degree3').checked=true;makePoints()});
+  $('sampleCount').addEventListener('input',()=>{state.n=+$('sampleCount').value;$('sampleCountVal').textContent=state.n+' points';if(state.n<6){$('degree5').checked=false;$('degree5').disabled=true}else $('degree5').disabled=false;if(!degrees().length)$('degree1').checked=true;makePoints()});
   $('spacing').addEventListener('change',()=>{state.spacing=$('spacing').value;makePoints()});
   for(const id of ['smooth','outlier'])$(id).addEventListener('input',readControls);
   for(let d=1;d<=5;d++)$('degree'+d).addEventListener('change',e=>{if(!degrees().length)e.target.checked=true;else if(e.target.checked)state.active=d;render()});
   function pointer(e){const r=$('chartHolder').getBoundingClientRect(),m={left:48,right:18,top:22,bottom:38},w=r.width-m.left-m.right,h=r.height-m.top-m.bottom;return{x:clamp((e.clientX-r.left-m.left)/w,0,1),y:clamp(105-(e.clientY-r.top-m.top)/h*110,0,100)}}
   const holder=$('chartHolder');holder.addEventListener('pointerdown',e=>{const p=pointer(e),pts=observed(),r=holder.getBoundingClientRect(),w=r.width-66,h=r.height-60;let chosen=-1,best=22;pts.forEach((item,i)=>{const d=Math.hypot((item.x-p.x)*w,(item.y-p.y)*h/110);if(d<best){best=d;chosen=i}});if(chosen>=0){state.selected=chosen;state.drag=chosen;holder.setPointerCapture(e.pointerId)}else state.probeX=p.x;render()});
-  holder.addEventListener('pointermove',e=>{if(state.drag<0)return;const p=pointer(e),i=state.drag,lo=i===0?.04:state.points[i-1].x+.025,hi=i===state.n-1?.96:state.points[i+1].x-.025;state.points[i].x=clamp(p.x,lo,hi);state.points[i].y=clamp(p.y-(state.outlier&&i===Math.floor(state.n/2)?45:0),2,98);render()});
+  holder.addEventListener('pointermove',e=>{if(state.drag<0)return;const p=pointer(e),i=state.drag,lo=i===0?.04:state.points[i-1].x+.025,hi=i===state.n-1?.96:state.points[i+1].x-.025;state.points[i].x=clamp(p.x,lo,hi);state.points[i].y=clamp(p.y-(state.outlier&&i===Math.floor(state.n/2)?55:0),2,98);render()});
   const stop=()=>{state.drag=-1};holder.addEventListener('pointerup',stop);holder.addEventListener('pointercancel',stop);
-  $('reset').addEventListener('click',()=>{$('sampleCount').value=7;$('spacing').value='even';$('smooth').value=0;$('outlier').checked=false;for(let d=1;d<=5;d++)$('degree'+d).checked=d===3;$('degree5').disabled=false;state.n=7;state.spacing='even';state.smooth=0;state.outlier=false;state.selected=3;state.probeX=.58;state.active=3;makePoints();readControls()});
+  $('reset').addEventListener('click',()=>{$('sampleCount').value=7;$('spacing').value='even';$('smooth').value=0;$('outlier').checked=false;for(let d=1;d<=5;d++)$('degree'+d).checked=d===1;$('degree5').disabled=false;state.n=7;state.spacing='even';state.smooth=0;state.outlier=false;state.selected=3;state.probeX=.58;state.active=1;makePoints();readControls()});
   window.addEventListener('resize',render);makePoints();readControls();
 })();
 </script>
@@ -158,7 +165,7 @@
 (() => {
   const $ = id => document.getElementById(id);
   const base = [[.14,.22,22],[.29,.16,40],[.51,.15,65],[.78,.17,81],[.88,.38,72],[.65,.36,61],[.43,.31,47],[.17,.48,28],[.35,.58,34],[.59,.68,55],[.81,.77,90],[.25,.82,19]];
-  const state = {order:2,reach:'global',k:6,smooth:0,samples:true,contours:true,tab:'spline',probe:{x:.68,y:.47}};
+  const state = {order:2,reach:'global',k:6,smooth:0,samples:true,contours:false,tab:'spline',probe:{x:.68,y:.47}};
   const clamp = (x,a,b) => Math.min(b,Math.max(a,x));
   const stops = [[0,39,79,135],[.25,74,154,188],[.5,184,214,187],[.75,241,204,119],[1,198,76,55]];
   function color(v,shade=1) {
@@ -272,7 +279,7 @@
     $('surfacePanel').setAttribute('aria-labelledby',tab==='idw'?'idwTab':'splineTab');render();
   }
   $('splineTab').addEventListener('click',()=>selectTab('spline'));$('idwTab').addEventListener('click',()=>selectTab('idw'));
-  $('surfaceReset').addEventListener('click',()=>{$('surfaceOrder').value='2';$('surfaceReach').value='global';$('surfaceK').value='6';$('surfaceSmooth').value='0';$('surfaceSamples').checked=true;$('surfaceContours').checked=true;state.probe={x:.68,y:.47};selectTab('spline');readControls()});
+  $('surfaceReset').addEventListener('click',()=>{$('surfaceOrder').value='2';$('surfaceReach').value='global';$('surfaceK').value='6';$('surfaceSmooth').value='0';$('surfaceSamples').checked=true;$('surfaceContours').checked=false;state.probe={x:.68,y:.47};selectTab('spline');readControls()});
   for(const id of ['leftSurfaceHolder','rightSurfaceHolder'])$(id).addEventListener('pointerdown',e=>{const r=e.currentTarget.getBoundingClientRect();state.probe={x:clamp((e.clientX-r.left)/r.width,0,1),y:clamp((e.clientY-r.top)/r.height,0,1)};render()});
   window.addEventListener('resize',render);readControls();
 })();
