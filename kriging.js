@@ -3,8 +3,8 @@
 const $ = id => document.getElementById(id);
 const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
 const fmt = (v,n=1) => Number.isFinite(v) ? v.toFixed(n) : '—';
-const state = {scenario:'elevation',model:'spherical',range:55,nugget:0,sill:400,design:'random',count:8,seed:7,probe:{x:.57,y:.48},samples:[],mode:null,pair:[],drag:-1,grid:null,inverse:null};
-const maps = ['krigMap','sdMap','idwMap','truthMap'];
+const state = {scenario:'elevation',model:'spherical',range:55,nugget:0,sill:400,design:'random',count:8,seed:7,probe:{x:.57,y:.48},samples:[],mode:null,pair:[],drag:-1,grid:null,inverse:null,reveal:{pairs:false,bins:false,model:false},binIndex:0};
+const maps = ['krigMap','sdMap','idwMap','truthMap','pairMap'];
 const mapRes = 54;
 const rampValue = [[39,79,135],[74,154,188],[184,214,187],[241,205,122],[198,76,55]];
 const rampSd = [[234,244,240],[148,197,188],[54,129,140],[41,61,117]];
@@ -146,7 +146,31 @@ function drawMap(id,values,scale,stops){
   ctx.strokeStyle='#152b42';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,Math.max(7,w/60),0,2*Math.PI);ctx.stroke();
   ctx.beginPath();ctx.moveTo(x-13,y);ctx.lineTo(x+13,y);ctx.moveTo(x,y-13);ctx.lineTo(x,y+13);ctx.stroke();
 }
+function drawPairMap(){
+  const canvas=$('pairMap'),rect=canvas.getBoundingClientRect();if(rect.width<2)return;
+  const dpr=Math.min(window.devicePixelRatio||1,2),w=Math.round(rect.width*dpr),h=Math.round(rect.height*dpr);
+  if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#f5f9f3';ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle='#dae9dd';ctx.lineWidth=dpr;
+  for(let k=1;k<5;k++){const v=k/5;ctx.beginPath();ctx.moveTo(v*w,0);ctx.lineTo(v*w,h);ctx.moveTo(0,v*h);ctx.lineTo(w,v*h);ctx.stroke()}
+  if(state.pair.length===2){
+    const a=state.samples[state.pair[0]],b=state.samples[state.pair[1]];
+    ctx.strokeStyle='#a6359a';ctx.lineWidth=3*dpr;ctx.beginPath();ctx.moveTo(a.x*w,a.y*h);ctx.lineTo(b.x*w,b.y*h);ctx.stroke();
+    ctx.fillStyle='#80337c';ctx.font=(12*dpr)+'px system-ui';ctx.textAlign='center';ctx.fillText(fmt(dist(a,b),0)+' m',(a.x+b.x)*w/2,(a.y+b.y)*h/2-8*dpr);
+  }
+  for(let i=0;i<state.samples.length;i++){
+    const s=state.samples[i],x=s.x*w,y=s.y*h,r=10*dpr,chosen=state.pair.includes(i);
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=chosen?'#a6359a':'#153f4a';ctx.fill();ctx.lineWidth=2*dpr;ctx.strokeStyle='white';ctx.stroke();
+    ctx.fillStyle='white';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 '+(10*dpr)+'px system-ui';ctx.fillText(String(s.id),x,y+.3*dpr);
+    const text=fmt(s.z),font=(11*dpr)+'px system-ui';ctx.font='700 '+font;
+    const tw=ctx.measureText(text).width+10*dpr,tx=clamp(x+9*dpr,2*dpr,w-tw-2*dpr),ty=clamp(y+10*dpr,2*dpr,h-19*dpr);
+    ctx.fillStyle='rgba(255,254,250,.92)';ctx.fillRect(tx,ty,tw,17*dpr);
+    ctx.fillStyle='#1c5544';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(text,tx+5*dpr,ty+8.5*dpr);
+  }
+}
 function drawMaps(){
+  drawPairMap();
   if(!state.grid)return;
   drawMap('krigMap',state.grid.krig,100,rampValue);
   drawMap('sdMap',state.grid.sd,30,rampSd);
@@ -183,53 +207,94 @@ function allPairs(){
   return out;
 }
 function renderPair(pairs){
-  if(state.pair.length<2){$('pairValues').textContent=state.pair.length===1?'Sample #'+state.samples[state.pair[0]].id+' selected. Click a second sample.':'Select a pair on a map.';$('pairMath').textContent='γ(h) = ½(zᵢ − zⱼ)²';$('pairDistance').textContent='Distance h and semivariance will appear here.';return null}
+  const first=state.pair.length===1?state.samples[state.pair[0]]:null;
+  if(state.pair.length<2){
+    $('pairValues').textContent=first?'Sample #'+first.id+' = '+fmt(first.z)+'. Choose a second observation.':'Choose two observations on the map.';
+    for(const id of ['pairDistance','pairDifference','pairSquared','pairMath'])$(id).textContent='—';
+    $('pairMapStatus').textContent=first?'Sample #'+first.id+' selected. Click a second point.':'Choose your first observation.';
+    return null;
+  }
   const a=state.samples[state.pair[0]],b=state.samples[state.pair[1]];
   if(!a||!b)return null;
   const chosen=pairs.find(p=>(p.i===state.pair[0]&&p.j===state.pair[1])||(p.j===state.pair[0]&&p.i===state.pair[1]));
+  const difference=Math.abs(a.z-b.z),squared=difference*difference;
   $('pairValues').textContent='Sample #'+a.id+' = '+fmt(a.z)+' · Sample #'+b.id+' = '+fmt(b.z);
-  $('pairMath').textContent='γ(h) = ½('+fmt(a.z)+' − '+fmt(b.z)+')² = '+fmt(chosen.gamma);
-  $('pairDistance').textContent='Separation h = '+fmt(chosen.h,0)+' m';
+  $('pairDistance').textContent=fmt(chosen.h,0)+' m';
+  $('pairDifference').textContent=fmt(difference);
+  $('pairSquared').textContent=fmt(squared,2);
+  $('pairMath').textContent='½ × '+fmt(squared,2)+' = '+fmt(chosen.gamma,2);
+  $('pairMapStatus').textContent='Pair #'+a.id+'–#'+b.id+' creates the purple graph point. Choose another pair to compare.';
   return chosen;
+}
+function updateRevealControls(){
+  $('revealPairs').setAttribute('aria-pressed',String(state.reveal.pairs));
+  $('revealBins').setAttribute('aria-pressed',String(state.reveal.bins));
+  $('revealModel').setAttribute('aria-pressed',String(state.reveal.model));
+  $('revealBins').disabled=!state.reveal.pairs;
+  $('revealModel').disabled=!state.reveal.bins;
+  $('lagBin').disabled=!state.reveal.bins;
+  $('modelExplorer').hidden=!state.reveal.model;
+}
+function renderBin(bins){
+  if(!state.reveal.bins){
+    $('binCount').textContent='Reveal the lag bins to inspect a distance class.';
+    $('binMean').textContent='—';$('binPairs').textContent='';return;
+  }
+  const k=state.binIndex,b=bins[k],from=k*15,to=(k+1)*15;
+  $('binCount').textContent=from+'–'+to+' m · '+b.n+(b.n===1?' pair':' pairs');
+  $('binMean').textContent=b.n?'Mean semivariance = '+fmt(b.sum/b.n,2):'No pairs in this bin';
+  const entries=b.values.slice(0,8).map(v=>fmt(v,1)).join(', ');
+  $('binPairs').textContent=b.n?'Pair semivariances: '+entries+(b.n>8?', …':'')+'. Average = '+fmt(b.sum/b.n,2)+'.':'Choose another distance class to find observed pairs.';
 }
 function drawVariogram(){
   const canvas=$('variogram'),rect=canvas.getBoundingClientRect();if(rect.width<2)return;
   const dpr=Math.min(window.devicePixelRatio||1,2),w=Math.round(rect.width*dpr),h=Math.round(rect.height*dpr);
   if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
   const ctx=canvas.getContext('2d');ctx.clearRect(0,0,w,h);
-  const pairs=allPairs(),selected=renderPair(pairs),bins=Array.from({length:10},()=>({sum:0,n:0}));
-  for(const p of pairs){const index=Math.min(9,Math.floor(p.h/15));bins[index].sum+=p.gamma;bins[index].n++}
-  const peak=Math.max(state.sill*1.2,selected?selected.gamma*1.1:0,...bins.map(b=>b.n?b.sum/b.n*1.1:0),100);
+  const pairs=allPairs(),selected=renderPair(pairs),bins=Array.from({length:10},()=>({sum:0,n:0,values:[]}));
+  for(const p of pairs){const index=Math.min(9,Math.floor(p.h/15));bins[index].sum+=p.gamma;bins[index].n++;bins[index].values.push(p.gamma)}
+  renderBin(bins);
+  const peak=Math.max(state.sill*1.2,selected?selected.gamma*1.1:0,...bins.map(b=>b.n?b.sum/b.n*1.1:0),state.reveal.pairs?Math.max(...pairs.map(p=>p.gamma*1.05)):0,100);
   const yMax=Math.ceil(peak/100)*100;
-  const m={left:48*dpr,right:15*dpr,top:17*dpr,bottom:38*dpr},pw=w-m.left-m.right,ph=h-m.top-m.bottom;
+  const m={left:50*dpr,right:16*dpr,top:19*dpr,bottom:41*dpr},pw=w-m.left-m.right,ph=h-m.top-m.bottom;
   const X=v=>m.left+v/150*pw,Y=v=>m.top+(1-v/yMax)*ph;
   ctx.strokeStyle='#dbe6de';ctx.lineWidth=dpr;
   ctx.fillStyle='#62786f';ctx.font=(10*dpr)+'px system-ui';ctx.textAlign='right';ctx.textBaseline='middle';
   for(let k=0;k<=4;k++){const v=k*yMax/4;ctx.beginPath();ctx.moveTo(m.left,Y(v));ctx.lineTo(w-m.right,Y(v));ctx.stroke();ctx.fillText(String(Math.round(v)),m.left-6*dpr,Y(v))}
   ctx.textAlign='center';ctx.textBaseline='top';
-  for(const v of [0,50,100,150]){ctx.fillText(String(v),X(v),h-m.bottom+7*dpr)}
-  ctx.fillText('Lag distance (m)',m.left+pw/2,h-14*dpr);
+  for(const v of [0,50,100,150])ctx.fillText(String(v),X(v),h-m.bottom+7*dpr);
+  ctx.fillText('Separation distance h (m)',m.left+pw/2,h-14*dpr);
   ctx.save();ctx.translate(13*dpr,m.top+ph/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.fillText('Semivariance',0,0);ctx.restore();
-  ctx.strokeStyle='#789088';ctx.lineWidth=1.3*dpr;ctx.beginPath();ctx.moveTo(m.left,m.top);ctx.lineTo(m.left,h-m.bottom);ctx.lineTo(w-m.right,h-m.bottom);ctx.stroke();
-  if($('showPairs').checked){
-    ctx.fillStyle='rgba(53,126,156,.22)';
-    for(const p of pairs){ctx.beginPath();ctx.arc(X(p.h),Y(p.gamma),2.7*dpr,0,2*Math.PI);ctx.fill()}
+  if(state.reveal.bins){
+    ctx.fillStyle='rgba(52,126,155,.08)';ctx.fillRect(X(state.binIndex*15),m.top,X(15)-X(0),ph);
   }
-  ctx.strokeStyle='#c56645';ctx.lineWidth=2.5*dpr;ctx.beginPath();
-  for(let k=0;k<=150;k++){const x=X(k),y=Y(modelGamma(k));if(k===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
-  ctx.stroke();
-  ctx.fillStyle='#357e9c';
-  for(let k=0;k<bins.length;k++)if(bins[k].n){
-    const x=X((k+.5)*15),y=Y(bins[k].sum/bins[k].n);
-    ctx.beginPath();ctx.arc(x,y,4.5*dpr,0,2*Math.PI);ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=1.5*dpr;ctx.stroke();
+  ctx.strokeStyle='#789088';ctx.lineWidth=1.3*dpr;ctx.beginPath();ctx.moveTo(m.left,m.top);ctx.lineTo(m.left,h-m.bottom);ctx.lineTo(w-m.right,h-m.bottom);ctx.stroke();
+  if(state.reveal.pairs){
+    ctx.fillStyle='rgba(53,126,156,.25)';
+    for(const p of pairs){ctx.beginPath();ctx.arc(X(p.h),Y(p.gamma),2.8*dpr,0,2*Math.PI);ctx.fill()}
+  }
+  if(state.reveal.bins){
+    ctx.fillStyle='#357e9c';
+    for(let k=0;k<bins.length;k++)if(bins[k].n){
+      const x=X((k+.5)*15),y=Y(bins[k].sum/bins[k].n);
+      ctx.beginPath();ctx.arc(x,y,k===state.binIndex?6*dpr:4.5*dpr,0,2*Math.PI);ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=1.5*dpr;ctx.stroke();
+    }
+  }
+  if(state.reveal.model){
+    ctx.strokeStyle='#c56645';ctx.lineWidth=2.7*dpr;ctx.beginPath();
+    for(let k=0;k<=150;k++){const x=X(k),y=Y(modelGamma(k));if(k===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
+    ctx.stroke();
+    const rangeX=X(state.range);
+    ctx.setLineDash([4*dpr,4*dpr]);ctx.strokeStyle='#7d9887';ctx.lineWidth=dpr;ctx.beginPath();ctx.moveTo(rangeX,m.top);ctx.lineTo(rangeX,h-m.bottom);ctx.stroke();ctx.setLineDash([]);
+    ctx.font=(10*dpr)+'px system-ui';ctx.fillStyle='#477666';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('Range '+state.range+' m',Math.min(rangeX+3*dpr,w-95*dpr),m.top+3*dpr);
   }
   if(selected){
     const x=X(selected.h),y=Y(selected.gamma);
     ctx.beginPath();ctx.arc(x,y,7*dpr,0,2*Math.PI);ctx.fillStyle='#a6359a';ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=2*dpr;ctx.stroke();
+  }else if(!state.reveal.pairs){
+    ctx.fillStyle='#6a8174';ctx.font=(13*dpr)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('Choose two observations to place the first point',m.left+pw/2,m.top+ph/2);
   }
-  const rangeX=X(state.range);
-  ctx.setLineDash([4*dpr,4*dpr]);ctx.strokeStyle='#7d9887';ctx.lineWidth=dpr;ctx.beginPath();ctx.moveTo(rangeX,m.top);ctx.lineTo(rangeX,h-m.bottom);ctx.stroke();ctx.setLineDash([]);
-  ctx.font=(10*dpr)+'px system-ui';ctx.fillStyle='#477666';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('Range '+state.range+' m',Math.min(rangeX+3*dpr,w-95*dpr),m.top+3*dpr);
 }
 function renderValidation(){
   if(!$('showTruth').checked)return;
@@ -258,27 +323,29 @@ function pointFromEvent(e){
   const r=e.currentTarget.getBoundingClientRect();
   return {x:clamp((e.clientX-r.left)/r.width,0,1),y:clamp((e.clientY-r.top)/r.height,0,1),width:r.width};
 }
-function hitSample(p){
-  if(!$('showSamples').checked)return -1;
+function hitSample(p,force=false){
+  if(!force && !$('showSamples').checked)return -1;
   let best=-1,delta=1e9;
   state.samples.forEach((s,i)=>{const d=Math.hypot((s.x-p.x)*p.width,(s.y-p.y)*p.width);if(d<delta){delta=d;best=i}});
   return delta<=15?best:-1;
 }
+function choosePair(hit){
+  if(hit<0){$('pairMapStatus').textContent='Click a numbered observation to choose a pair.';return}
+  if(state.pair.length>=2)state.pair=[];
+  if(!state.pair.includes(hit))state.pair.push(hit);
+  if(state.pair.length===2 && state.mode==='pair')setMode(null);
+  $('mapStatus').textContent=state.pair.length===2?'Pair selected. Its semivariance is highlighted in Experiment 1.':'First observation selected. Click a second point.';
+  drawMaps();drawVariogram();
+}
 function onMapDown(e){
-  const p=pointFromEvent(e),hit=hitSample(p);
+  const p=pointFromEvent(e),pairMap=e.currentTarget.id==='pairMap',hit=hitSample(p,pairMap);
+  if(pairMap){choosePair(hit);return}
   if(state.mode==='add'){
     if(state.samples.length>=24){$('mapStatus').textContent='Maximum 24 observations. Reset or change the sampling design to start again.';setMode(null);return}
     state.samples.push({id:state.samples.length+1,x:p.x,y:p.y,z:Math.round(truth(p.x,p.y)*10)/10});
     state.pair=[];setMode(null);render();$('mapStatus').textContent='Added sample #'+state.samples.length+' from the synthetic reference field.';return;
   }
-  if(state.mode==='pair'){
-    if(hit<0){$('mapStatus').textContent='Click a numbered observation to select a pair.';return}
-    if(state.pair.length>=2)state.pair=[];
-    if(!state.pair.includes(hit))state.pair.push(hit);
-    if(state.pair.length===2){setMode(null);$('mapStatus').textContent='Pair selected. Its semivariance is highlighted below.'}
-    else $('mapStatus').textContent='First sample selected. Click a second numbered observation.';
-    drawMaps();drawVariogram();return;
-  }
+  if(state.mode==='pair'){choosePair(hit);return}
   if(hit>=0){
     state.probe={x:state.samples[hit].x,y:state.samples[hit].y};
     render(false);
@@ -290,33 +357,48 @@ function onMapDown(e){
   }
 }
 function onMapMove(e){
-  const p=pointFromEvent(e);
+  const p=pointFromEvent(e),pairMap=e.currentTarget.id==='pairMap';
   if(state.drag>=0){state.samples[state.drag].x=p.x;state.samples[state.drag].y=p.y;render();return}
-  const hit=hitSample(p);
-  if(hit>=0 && !state.mode){const s=state.samples[hit];$('mapStatus').textContent='Sample #'+s.id+': value '+fmt(s.z)+' at '+fmt(s.x*100,0)+', '+fmt(s.y*100,0)+' m. Drag to move it.'}
+  const hit=hitSample(p,pairMap);
+  if(hit>=0){
+    const s=state.samples[hit];
+    if(pairMap)$('pairMapStatus').textContent='Sample #'+s.id+' has value '+fmt(s.z)+'. Click to select it.';
+    else if(!state.mode)$('mapStatus').textContent='Sample #'+s.id+': value '+fmt(s.z)+' at '+fmt(s.x*100,0)+', '+fmt(s.y*100,0)+' m. Drag to move it.';
+  }
 }
 function onMapUp(){state.drag=-1}
+function setRange(value){
+  state.range=Number(value);
+  $('range').value=String(state.range);$('rangeLab').value=String(state.range);
+  $('rangeValue').textContent=state.range+' m';$('rangeLabValue').textContent=state.range+' m';
+  render();
+}
 function reset(){
-  state.scenario='elevation';state.model='spherical';state.range=55;state.nugget=0;state.sill=400;state.design='random';state.count=8;state.seed=7;state.probe={x:.57,y:.48};state.mode=null;state.pair=[];state.drag=-1;
+  state.scenario='elevation';state.model='spherical';state.range=55;state.nugget=0;state.sill=400;state.design='random';state.count=8;state.seed=7;state.probe={x:.57,y:.48};state.mode=null;state.pair=[];state.drag=-1;state.reveal={pairs:false,bins:false,model:false};state.binIndex=0;
   for(const id of ['scenario','model','design'])$(id).value=state[id];
-  for(const id of ['range','nugget','sill','count'])$(id).value=state[id];
-  $('showTruth').checked=false;$('showPairs').checked=false;$('showLinks').checked=true;$('showSamples').checked=true;
+  for(const id of ['range','rangeLab','nugget','sill','count'])$(id).value=id==='rangeLab'?55:state[id];
+  $('showTruth').checked=false;$('showLinks').checked=true;$('showSamples').checked=true;
   $('truthCard').hidden=true;$('validationPanel').hidden=true;$('selectPair').setAttribute('aria-pressed','false');$('addSample').setAttribute('aria-pressed','false');
-  $('rangeValue').textContent='55 m';$('nuggetValue').textContent='0';$('sillValue').textContent='400';$('countValue').textContent='8';
+  $('rangeValue').textContent='55 m';$('rangeLabValue').textContent='55 m';$('nuggetValue').textContent='0';$('sillValue').textContent='400';$('countValue').textContent='8';$('lagBin').value='0';
   $('mapStatus').textContent='Click a map cell to choose a prediction location, or drag a numbered observation.';
-  makeSamples();render();
+  updateRevealControls();makeSamples();render();
 }
 for(const id of maps){const canvas=$(id);canvas.addEventListener('pointerdown',onMapDown);canvas.addEventListener('pointermove',onMapMove);canvas.addEventListener('pointerup',onMapUp);canvas.addEventListener('pointercancel',onMapUp)}
 $('selectPair').addEventListener('click',()=>setMode('pair'));
 $('addSample').addEventListener('click',()=>setMode('add'));
 $('randomize').addEventListener('click',()=>{state.seed++;makeSamples();render();$('mapStatus').textContent='New '+state.design+' sample layout. The synthetic reference field did not change.'});
 $('reset').addEventListener('click',reset);
-for(const id of ['range','nugget','sill'])$(id).addEventListener('input',e=>{state[id]=Number(e.target.value);$(id+'Value').textContent=String(state[id])+(id==='range'?' m':'');render()});
+for(const id of ['range','rangeLab'])$(id).addEventListener('input',e=>setRange(e.target.value));
+for(const id of ['nugget','sill'])$(id).addEventListener('input',e=>{state[id]=Number(e.target.value);$(id+'Value').textContent=String(state[id]);render()});
 $('model').addEventListener('change',e=>{state.model=e.target.value;render()});
 for(const id of ['scenario','design','count'])$(id).addEventListener(id==='count'?'input':'change',e=>{state[id]=id==='count'?Number(e.target.value):e.target.value;if(id==='count')$('countValue').textContent=String(state.count);makeSamples();render()});
 for(const id of ['showLinks','showSamples'])$(id).addEventListener('change',drawMaps);
-$('showPairs').addEventListener('change',drawVariogram);
+$('revealPairs').addEventListener('click',()=>{state.reveal.pairs=!state.reveal.pairs;if(!state.reveal.pairs){state.reveal.bins=false;state.reveal.model=false}updateRevealControls();drawVariogram()});
+$('revealBins').addEventListener('click',()=>{state.reveal.bins=!state.reveal.bins;if(!state.reveal.bins)state.reveal.model=false;updateRevealControls();drawVariogram()});
+$('revealModel').addEventListener('click',()=>{state.reveal.model=!state.reveal.model;updateRevealControls();drawVariogram()});
+$('lagBin').addEventListener('change',e=>{state.binIndex=Number(e.target.value);drawVariogram()});
 $('showTruth').addEventListener('change',e=>{$('truthCard').hidden=!e.target.checked;$('validationPanel').hidden=!e.target.checked;requestAnimationFrame(()=>{drawMaps();renderValidation()})});
 window.addEventListener('resize',()=>{drawMaps();drawVariogram()});
 reset();
 })();
+
