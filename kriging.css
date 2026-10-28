@@ -60,3 +60,7 @@
 .qr-card strong{color:#1c654f;font-size:15px}.qr-card p{font-size:12px;color:#4d6d5e;margin:5px 0}
 .qr-card a{font-size:12px;color:#176f57;overflow-wrap:anywhere}
 @media(max-width:460px){.qr-card{align-items:start}.qr-card img{width:82px;height:82px}}
+.parameter-toggles{display:flex;align-items:center;flex-wrap:wrap;gap:8px 18px;margin:10px 0 13px;padding:10px 13px;background:#edf5ee;border:1px solid #d1e4d5;border-radius:8px}
+.parameter-toggles>span{font-size:12px;font-weight:850;color:#235f4b}
+.parameter-toggles .check{margin:0;font-size:12px}
+.parameter-toggles .check:has(input:disabled){opacity:.55}
