@@ -3,7 +3,7 @@
 const $ = id => document.getElementById(id);
 const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
 const fmt = (v,n=1) => Number.isFinite(v) ? v.toFixed(n) : '—';
-const state = {scenario:'elevation',model:'spherical',range:55,nugget:0,sill:400,design:'random',count:8,seed:7,probe:{x:.57,y:.48},samples:[],mode:null,pair:[],drag:-1,grid:null,inverse:null,reveal:{pairs:false,bins:false,model:false},binIndex:0};
+const state = {scenario:'elevation',model:'spherical',range:55,nugget:0,sill:400,design:'random',count:8,seed:7,probe:{x:.57,y:.48},samples:[],mode:null,pair:[],selectedPairs:[],drag:-1,grid:null,inverse:null,reveal:{pairs:false,bins:false,model:false},binIndex:0};
 const maps = ['krigMap','sdMap','idwMap','truthMap','pairMap'];
 const mapRes = 54;
 const rampValue = [[39,79,135],[74,154,188],[184,214,187],[241,205,122],[198,76,55]];
@@ -42,7 +42,7 @@ function makeSamples(){
     }
   }
   state.samples=positions.map((p,i)=>({id:i+1,x:p.x,y:p.y,z:Math.round(truth(p.x,p.y)*10)/10}));
-  state.pair=[];
+  state.pair=[];state.selectedPairs=[];
 }
 function dist(a,b){return 100*Math.hypot(a.x-b.x,a.y-b.y)}
 function corr(h){
@@ -154,6 +154,12 @@ function drawPairMap(){
   ctx.fillStyle='#f5f9f3';ctx.fillRect(0,0,w,h);
   ctx.strokeStyle='#dae9dd';ctx.lineWidth=dpr;
   for(let k=1;k<5;k++){const v=k/5;ctx.beginPath();ctx.moveTo(v*w,0);ctx.lineTo(v*w,h);ctx.moveTo(0,v*h);ctx.lineTo(w,v*h);ctx.stroke()}
+  if(state.reveal.bins){
+    ctx.strokeStyle='rgba(28,104,145,.35)';ctx.lineWidth=2*dpr;
+    for(const pair of allPairs())if(Math.min(9,Math.floor(pair.h/15))===state.binIndex){
+      const a=state.samples[pair.i],b=state.samples[pair.j];ctx.beginPath();ctx.moveTo(a.x*w,a.y*h);ctx.lineTo(b.x*w,b.y*h);ctx.stroke();
+    }
+  }
   if(state.pair.length===2){
     const a=state.samples[state.pair[0]],b=state.samples[state.pair[1]];
     ctx.strokeStyle='#a6359a';ctx.lineWidth=3*dpr;ctx.beginPath();ctx.moveTo(a.x*w,a.y*h);ctx.lineTo(b.x*w,b.y*h);ctx.stroke();
@@ -202,7 +208,7 @@ function allPairs(){
   const out=[];
   for(let i=0;i<state.samples.length;i++)for(let j=i+1;j<state.samples.length;j++){
     const a=state.samples[i],b=state.samples[j];
-    out.push({i,j,h:dist(a,b),gamma:.5*(a.z-b.z)**2});
+    out.push({i,j,key:i+'-'+j,h:dist(a,b),gamma:.5*(a.z-b.z)**2});
   }
   return out;
 }
@@ -223,7 +229,7 @@ function renderPair(pairs){
   $('pairDifference').textContent=fmt(difference);
   $('pairSquared').textContent=fmt(squared,2);
   $('pairMath').textContent='½ × '+fmt(squared,2)+' = '+fmt(chosen.gamma,2);
-  $('pairMapStatus').textContent='Pair #'+a.id+'–#'+b.id+' creates the purple graph point. Choose another pair to compare.';
+  $('pairMapStatus').textContent='Pair #'+a.id+'–#'+b.id+' is highlighted. Choose another pair to add a point.';
   return chosen;
 }
 function updateRevealControls(){
@@ -235,26 +241,34 @@ function updateRevealControls(){
   $('lagBin').disabled=!state.reveal.bins;
   $('modelExplorer').hidden=!state.reveal.model;
 }
+function renderSelectedPairs(pairs){
+  const selected=state.selectedPairs.map(key=>pairs.find(p=>p.key===key)).filter(Boolean);
+  $('selectedPairCount').textContent=selected.length+(selected.length===1?' pair plotted':' pairs plotted');
+  $('clearPairs').disabled=selected.length===0;
+  $('pairHistory').textContent=selected.length?'Your points: '+selected.slice(-10).map(p=>'#'+state.samples[p.i].id+'–#'+state.samples[p.j].id).join(', ')+(selected.length>10?' · showing last 10':'')+'.':'Choose two observations to add your first point.';
+  return selected;
+}
 function renderBin(bins){
   if(!state.reveal.bins){
     $('binCount').textContent='Reveal the lag bins to inspect a distance class.';
-    $('binMean').textContent='—';$('binPairs').textContent='';return;
+    $('binMean').textContent='—';$('binFormula').textContent='';$('binPairs').textContent='';$('binMapHint').textContent='';return;
   }
   const k=state.binIndex,b=bins[k],from=k*15,to=(k+1)*15;
   $('binCount').textContent=from+'–'+to+' m · '+b.n+(b.n===1?' pair':' pairs');
-  $('binMean').textContent=b.n?'Mean semivariance = '+fmt(b.sum/b.n,2):'No pairs in this bin';
-  const entries=b.values.slice(0,8).map(v=>fmt(v,1)).join(', ');
-  $('binPairs').textContent=b.n?'Pair semivariances: '+entries+(b.n>8?', …':'')+'. Average = '+fmt(b.sum/b.n,2)+'.':'Choose another distance class to find observed pairs.';
+  $('binMean').textContent=b.n?'Experimental mean semivariance = '+fmt(b.sum/b.n,2):'No pairs in this bin';
+  $('binFormula').textContent=b.n?'Σ pair semivariances = '+fmt(b.sum,2)+'; '+fmt(b.sum,2)+' ÷ '+b.n+' = '+fmt(b.sum/b.n,2):'';
+  $('binPairs').innerHTML=b.values.slice(0,8).map(p=>'<div><span>#'+state.samples[p.i].id+'–#'+state.samples[p.j].id+' · '+fmt(p.h,0)+' m</span><strong>'+fmt(p.gamma,2)+'</strong></div>').join('')+(b.n>8?'<small>+'+(b.n-8)+' more pairs in this bin</small>':'');
+  $('binMapHint').textContent=b.n?'These '+b.n+' pair lines are highlighted in blue on the observation map. Their points are dark blue in the graph.':'Try another distance class to see its contributing pairs.';
 }
 function drawVariogram(){
   const canvas=$('variogram'),rect=canvas.getBoundingClientRect();if(rect.width<2)return;
   const dpr=Math.min(window.devicePixelRatio||1,2),w=Math.round(rect.width*dpr),h=Math.round(rect.height*dpr);
   if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
   const ctx=canvas.getContext('2d');ctx.clearRect(0,0,w,h);
-  const pairs=allPairs(),selected=renderPair(pairs),bins=Array.from({length:10},()=>({sum:0,n:0,values:[]}));
-  for(const p of pairs){const index=Math.min(9,Math.floor(p.h/15));bins[index].sum+=p.gamma;bins[index].n++;bins[index].values.push(p.gamma)}
+  const pairs=allPairs(),selected=renderPair(pairs),chosenPairs=renderSelectedPairs(pairs),bins=Array.from({length:10},()=>({sum:0,n:0,values:[]}));
+  for(const p of pairs){const index=Math.min(9,Math.floor(p.h/15));bins[index].sum+=p.gamma;bins[index].n++;bins[index].values.push(p)}
   renderBin(bins);
-  const peak=Math.max(state.sill*1.2,selected?selected.gamma*1.1:0,...bins.map(b=>b.n?b.sum/b.n*1.1:0),state.reveal.pairs?Math.max(...pairs.map(p=>p.gamma*1.05)):0,100);
+  const peak=Math.max(state.sill*1.2,selected?selected.gamma*1.1:0,...bins.map(b=>b.n?b.sum/b.n*1.1:0),state.reveal.pairs?Math.max(...pairs.map(p=>p.gamma*1.05)):0,...chosenPairs.map(p=>p.gamma*1.1),100);
   const yMax=Math.ceil(peak/100)*100;
   const m={left:50*dpr,right:16*dpr,top:19*dpr,bottom:41*dpr},pw=w-m.left-m.right,ph=h-m.top-m.bottom;
   const X=v=>m.left+v/150*pw,Y=v=>m.top+(1-v/yMax)*ph;
@@ -274,6 +288,8 @@ function drawVariogram(){
     for(const p of pairs){ctx.beginPath();ctx.arc(X(p.h),Y(p.gamma),2.8*dpr,0,2*Math.PI);ctx.fill()}
   }
   if(state.reveal.bins){
+    ctx.fillStyle='rgba(24,96,136,.85)';
+    for(const p of bins[state.binIndex].values){ctx.beginPath();ctx.arc(X(p.h),Y(p.gamma),4*dpr,0,2*Math.PI);ctx.fill()}
     ctx.fillStyle='#357e9c';
     for(let k=0;k<bins.length;k++)if(bins[k].n){
       const x=X((k+.5)*15),y=Y(bins[k].sum/bins[k].n);
@@ -288,10 +304,13 @@ function drawVariogram(){
     ctx.setLineDash([4*dpr,4*dpr]);ctx.strokeStyle='#7d9887';ctx.lineWidth=dpr;ctx.beginPath();ctx.moveTo(rangeX,m.top);ctx.lineTo(rangeX,h-m.bottom);ctx.stroke();ctx.setLineDash([]);
     ctx.font=(10*dpr)+'px system-ui';ctx.fillStyle='#477666';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('Range '+state.range+' m',Math.min(rangeX+3*dpr,w-95*dpr),m.top+3*dpr);
   }
+  for(const p of chosenPairs){
+    ctx.beginPath();ctx.arc(X(p.h),Y(p.gamma),4.5*dpr,0,2*Math.PI);ctx.fillStyle='#a6359a';ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=1.2*dpr;ctx.stroke();
+  }
   if(selected){
     const x=X(selected.h),y=Y(selected.gamma);
     ctx.beginPath();ctx.arc(x,y,7*dpr,0,2*Math.PI);ctx.fillStyle='#a6359a';ctx.fill();ctx.strokeStyle='white';ctx.lineWidth=2*dpr;ctx.stroke();
-  }else if(!state.reveal.pairs){
+  }else if(!state.reveal.pairs && !chosenPairs.length){
     ctx.fillStyle='#6a8174';ctx.font=(13*dpr)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText('Choose two observations to place the first point',m.left+pw/2,m.top+ph/2);
   }
@@ -333,7 +352,11 @@ function choosePair(hit){
   if(hit<0){$('pairMapStatus').textContent='Click a numbered observation to choose a pair.';return}
   if(state.pair.length>=2)state.pair=[];
   if(!state.pair.includes(hit))state.pair.push(hit);
-  if(state.pair.length===2 && state.mode==='pair')setMode(null);
+  if(state.pair.length===2){
+    const key=[...state.pair].sort((a,b)=>a-b).join('-');
+    if(!state.selectedPairs.includes(key))state.selectedPairs.push(key);
+    if(state.mode==='pair')setMode(null);
+  }
   $('mapStatus').textContent=state.pair.length===2?'Pair selected. Its semivariance is highlighted in Experiment 1.':'First observation selected. Click a second point.';
   drawMaps();drawVariogram();
 }
@@ -374,7 +397,7 @@ function setRange(value){
   render();
 }
 function reset(){
-  state.scenario='elevation';state.model='spherical';state.range=55;state.nugget=0;state.sill=400;state.design='random';state.count=8;state.seed=7;state.probe={x:.57,y:.48};state.mode=null;state.pair=[];state.drag=-1;state.reveal={pairs:false,bins:false,model:false};state.binIndex=0;
+  state.scenario='elevation';state.model='spherical';state.range=55;state.nugget=0;state.sill=400;state.design='random';state.count=8;state.seed=7;state.probe={x:.57,y:.48};state.mode=null;state.pair=[];state.selectedPairs=[];state.drag=-1;state.reveal={pairs:false,bins:false,model:false};state.binIndex=0;
   for(const id of ['scenario','model','design'])$(id).value=state[id];
   for(const id of ['range','rangeLab','nugget','sill','count'])$(id).value=id==='rangeLab'?55:state[id];
   $('showTruth').checked=false;$('showLinks').checked=true;$('showSamples').checked=true;
@@ -393,10 +416,11 @@ for(const id of ['nugget','sill'])$(id).addEventListener('input',e=>{state[id]=N
 $('model').addEventListener('change',e=>{state.model=e.target.value;render()});
 for(const id of ['scenario','design','count'])$(id).addEventListener(id==='count'?'input':'change',e=>{state[id]=id==='count'?Number(e.target.value):e.target.value;if(id==='count')$('countValue').textContent=String(state.count);makeSamples();render()});
 for(const id of ['showLinks','showSamples'])$(id).addEventListener('change',drawMaps);
+$('clearPairs').addEventListener('click',()=>{state.selectedPairs=[];state.pair=[];drawMaps();drawVariogram()});
 $('revealPairs').addEventListener('click',()=>{state.reveal.pairs=!state.reveal.pairs;if(!state.reveal.pairs){state.reveal.bins=false;state.reveal.model=false}updateRevealControls();drawVariogram()});
-$('revealBins').addEventListener('click',()=>{state.reveal.bins=!state.reveal.bins;if(!state.reveal.bins)state.reveal.model=false;updateRevealControls();drawVariogram()});
+$('revealBins').addEventListener('click',()=>{state.reveal.bins=!state.reveal.bins;if(!state.reveal.bins)state.reveal.model=false;updateRevealControls();drawMaps();drawVariogram()});
 $('revealModel').addEventListener('click',()=>{state.reveal.model=!state.reveal.model;updateRevealControls();drawVariogram()});
-$('lagBin').addEventListener('change',e=>{state.binIndex=Number(e.target.value);drawVariogram()});
+$('lagBin').addEventListener('change',e=>{state.binIndex=Number(e.target.value);drawMaps();drawVariogram()});
 $('showTruth').addEventListener('change',e=>{$('truthCard').hidden=!e.target.checked;$('validationPanel').hidden=!e.target.checked;requestAnimationFrame(()=>{drawMaps();renderValidation()})});
 window.addEventListener('resize',()=>{drawMaps();drawVariogram()});
 reset();
