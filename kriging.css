@@ -31,3 +31,5 @@
 .bin-pair-list strong{font-size:11px;min-height:0;color:#1f6851}.bin-pair-list small{display:block;padding:6px 8px;color:#637d70}
 .bin-map-hint{font-weight:700;color:#246882!important}.model-explorer a{color:#216b55;font-weight:800}
 @media(max-width:680px){.pair-progress{align-items:start;flex-direction:column}.pair-progress button{width:100%}}
+
+@media(max-width:680px){.semivariogram-lab .variogram-frame{aspect-ratio:auto;height:clamp(250px,58vw,300px);min-height:0}}
