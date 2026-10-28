@@ -3,6 +3,7 @@
 const $ = id => document.getElementById(id);
 const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
 const fmt = (v,n=1) => Number.isFinite(v) ? v.toFixed(n) : '—';
+const rangeLabel = fit => fit.range===20?'≤20 m (fit limit)':fit.range===140?'≥140 m (fit limit)':fit.range+' m';
 const state = {range:55,nugget:0,sill:400,design:'systematic',count:12,seed:7,probe:{x:.57,y:.48},samples:[],mode:null,pair:[],selectedPairs:[],fit:null,lab2:{samples:[],pair:[],selectedPairs:[],reveal:{pairs:false,bins:false,model:false},binIndex:0,fit:null},drag:-1,grid:null,inverse:null,reveal:{pairs:false,bins:false,model:false},binIndex:0};
 const maps = ['krigMap','sdMap','idwMap','pairMap','pairMap2'];
 const lab = which => which===2?state.lab2:state;
@@ -97,7 +98,7 @@ function predict(p,includeWeights=false){
   const w=solution.slice(0,n);
   let kv=0,iv=0,cross=0;
   for(let i=0;i<n;i++){kv+=w[i]*s[i].z;iv+=idw[i]*s[i].z;cross+=w[i]*c[i]}
-  const variance=Math.max(0,partial-cross-solution[n]);
+  const variance=Math.max(0,state.sill-cross-solution[n]);
   const out={krig:kv,idw:iv,sd:Math.sqrt(variance)};
   if(includeWeights){out.krigWeights=w;out.idwWeights=idw;out.distances=ds}
   return out;
@@ -229,10 +230,10 @@ function fitBoth(resetManual=false){
   state.range=state.fit.range;
   if(resetManual){state.nugget=0;state.sill=Math.max(50,Math.round(state.fit.sill/10)*10)}
   state.sill=Math.max(state.sill,state.nugget+10);
-  $('rangeValue').textContent=state.range+' m';
+  $('rangeValue').textContent=rangeLabel(state.fit);
   $('nugget').value=String(state.nugget);$('nuggetValue').textContent=String(state.nugget);
   $('sill').value=String(state.sill);$('sillValue').textContent=String(state.sill);
-  $('parameterValues').textContent='Case B fitted range: '+state.lab2.fit.range+' m · fitted sill: '+fmt(state.lab2.fit.sill,1)+' · fitted nugget: 0';
+  $('parameterValues').textContent='Case B fitted range: '+rangeLabel(state.lab2.fit)+' · fitted sill: '+fmt(state.lab2.fit.sill,1)+' · fitted nugget: 0';
 }
 function renderPair(pairs,which=1){
   const L=lab(which),first=L.pair.length===1?L.samples[L.pair[0]]:null;
@@ -260,7 +261,7 @@ function updateRevealControls(which=1){
   el('revealModel',which).disabled=!L.reveal.bins;
   el('lagBin',which).disabled=!L.reveal.bins;
   el('modelExplorer',which).hidden=!L.reveal.model;
-  el('fitReadout',which).textContent='Range '+L.fit.range+' m · sill '+fmt(L.fit.sill,1)+' · nugget 0';
+  el('fitReadout',which).textContent='Range '+rangeLabel(L.fit)+' · sill '+fmt(L.fit.sill,1)+' · nugget 0';
   el('variogramLegend',which).innerHTML='<span><i class="legend-dot selected"></i>Pairs you selected</span>'
    +(L.reveal.pairs?'<span><i class="legend-dot all"></i>All observation pairs</span>':'')
    +(L.reveal.bins?'<span><i class="legend-dot bin"></i>Experimental lag-bin averages</span>':'')
