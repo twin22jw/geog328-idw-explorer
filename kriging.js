@@ -329,7 +329,7 @@ function drawVariogram(which=1){
   }
   if(L.reveal.model){
     ctx.strokeStyle='#c56645';ctx.lineWidth=2.7*dpr;ctx.beginPath();
-    for(let k=0;k<=150;k++){const x=X(k),y=Y(modelGamma(k,L.fit));if(k===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
+    for(let k=0;k<=150;k++){const x=X(k),y=Y(k===0?L.fit.nugget:modelGamma(k,L.fit));if(k===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
     ctx.stroke();
     ctx.font=(11*dpr)+'px system-ui';ctx.textAlign='left';ctx.textBaseline='middle';
     if(el('showSill',which).checked){
@@ -342,9 +342,10 @@ function drawVariogram(which=1){
       ctx.strokeStyle='#24775d';ctx.lineWidth=2*dpr;const yy=h-m.bottom-12*dpr;ctx.beginPath();ctx.moveTo(X(0),yy);ctx.lineTo(rx,yy);ctx.stroke();ctx.fillText('↔',X(L.fit.range/2)-5*dpr,yy-10*dpr);
     }
     if(el('showNugget',which).checked){
-      ctx.strokeStyle='#b24b81';ctx.lineWidth=3*dpr;ctx.beginPath();ctx.moveTo(X(0)+5*dpr,Y(0));ctx.lineTo(X(0)+5*dpr,Y(L.fit.nugget));ctx.stroke();
+      ctx.strokeStyle='#b24b81';ctx.lineWidth=4*dpr;ctx.beginPath();ctx.moveTo(X(0),Y(0));ctx.lineTo(X(0),Y(L.fit.nugget));ctx.stroke();
       ctx.fillStyle='#a33371';ctx.beginPath();ctx.arc(X(0),Y(L.fit.nugget),4*dpr,0,2*Math.PI);ctx.fill();
-      ctx.fillText('Nugget '+fmt(L.fit.nugget,0),X(0)+11*dpr,Y(L.fit.nugget)-12*dpr);
+      ctx.fillText('Nugget '+fmt(L.fit.nugget,0),X(0)+10*dpr,Y(L.fit.nugget)-12*dpr);
+      ctx.beginPath();ctx.arc(X(0),Y(0),2.8*dpr,0,2*Math.PI);ctx.fillStyle='#fffefa';ctx.fill();ctx.strokeStyle='#a33371';ctx.lineWidth=dpr;ctx.stroke();
     }
   }
   for(const p of chosenPairs){
@@ -439,7 +440,31 @@ for(const which of [1,2]){
   el('lagBin',which).addEventListener('change',e=>{lab(which).binIndex=Number(e.target.value);drawPairMap(which);drawVariogram(which)});
   for(const name of ['Range','Nugget','Sill'])el('show'+name,which).addEventListener('change',()=>drawVariogram(which));
 }
-$('explainParams').addEventListener('click',()=>$('parameterDialog').showModal());
+function renderParameterDiagram(){
+  const fit=state.fit,svg=$('parameterDiagram'),x0=72,x1=566,y0=286,yTop=32;
+  const maxY=Math.max(225,Math.ceil(fit.sill*1.3/25)*25);
+  const X=h=>x0+h/150*(x1-x0),Y=g=>y0-g/maxY*(y0-yTop);
+  const curve=Array.from({length:151},(_,h)=>(h?'L':'M')+fmt(X(h),2)+' '+fmt(Y(h===0?fit.nugget:modelGamma(h,fit)),2)).join(' ');
+  const rx=X(fit.range),sy=Y(fit.sill),ny=Y(fit.nugget);
+  svg.innerHTML=[
+    '<text x="72" y="18" fill="#365f50" font-size="13" font-weight="700">Case A · fitted spherical model</text>',
+    '<path d="M72 32 V286 H566" fill="none" stroke="#173e46" stroke-width="2"/>',
+    '<path d="'+curve+'" fill="none" stroke="#c56645" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>',
+    '<line x1="'+fmt(rx,2)+'" y1="'+fmt(sy,2)+'" x2="'+fmt(rx,2)+'" y2="286" stroke="#24775d" stroke-width="2" stroke-dasharray="6 5"/>',
+    '<line x1="72" y1="'+fmt(sy,2)+'" x2="566" y2="'+fmt(sy,2)+'" stroke="#27699b" stroke-width="2" stroke-dasharray="6 5"/>',
+    '<line x1="72" y1="'+fmt(ny,2)+'" x2="72" y2="286" stroke="#b24b81" stroke-width="5"/>',
+    '<circle cx="72" cy="'+fmt(ny,2)+'" r="4" fill="#b24b81"/>',
+    '<circle cx="72" cy="286" r="3" fill="#fffefa" stroke="#b24b81" stroke-width="1.5"/>',
+    '<line x1="72" y1="305" x2="'+fmt(rx,2)+'" y2="305" stroke="#24775d" stroke-width="2"/>',
+    '<path d="M72 301 L72 309 M'+fmt(rx,2)+' 301 L'+fmt(rx,2)+' 309" stroke="#24775d" stroke-width="2"/>',
+    '<text x="'+fmt((x0+rx)/2,2)+'" y="322" text-anchor="middle" fill="#17654e" font-size="14" font-weight="700">Range '+fit.range+' m</text>',
+    '<text x="475" y="'+fmt(sy-9,2)+'" fill="#195b83" font-size="14" font-weight="700">Sill '+fmt(fit.sill,1)+'</text>',
+    '<text x="83" y="'+fmt(ny-10,2)+'" fill="#a33371" font-size="14" font-weight="700">Nugget '+fmt(fit.nugget,0)+'</text>',
+    '<text x="326" y="351" text-anchor="middle" fill="#173e46" font-size="15" font-weight="700">Separation distance h (m)</text>',
+    '<text transform="translate(22 160) rotate(-90)" text-anchor="middle" fill="#173e46" font-size="15" font-weight="700">Semivariance</text>'
+  ].join('');
+}
+$('explainParams').addEventListener('click',()=>{renderParameterDiagram();$('parameterDialog').showModal()});
 $('closeParameterDialog').addEventListener('click',()=>$('parameterDialog').close());
 $('parameterDialog').addEventListener('click',e=>{if(e.target===$('parameterDialog'))e.target.close()});
 window.addEventListener('resize',()=>{drawMaps();drawVariogram(1);drawVariogram(2)});
