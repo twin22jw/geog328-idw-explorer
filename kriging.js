@@ -64,9 +64,7 @@ function makeSamples(){
 function dist(a,b){return 100*Math.hypot(a.x-b.x,a.y-b.y)}
 function corr(h){
   const t=h/state.range;
-  if(state.model==='spherical') return t>=1?0:1-1.5*t+.5*t*t*t;
-  if(state.model==='exponential') return Math.exp(-3*t);
-  return Math.exp(-3*t*t);
+  return t>=1?0:1-1.5*t+.5*t*t*t;
 }
 function modelGamma(h,fit){const t=h/fit.range;const c=t>=1?0:1-1.5*t+.5*t*t*t;return h===0?0:fit.nugget+(fit.sill-fit.nugget)*(1-c)}
 function invert(matrix){
@@ -447,5 +445,6 @@ $('parameterDialog').addEventListener('click',e=>{if(e.target===$('parameterDial
 window.addEventListener('resize',()=>{drawMaps();drawVariogram(1);drawVariogram(2)});
 reset();
 })();
+
 
 
